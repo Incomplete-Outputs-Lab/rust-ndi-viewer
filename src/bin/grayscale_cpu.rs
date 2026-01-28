@@ -14,9 +14,12 @@ struct NdiApp {
 }
 
 impl NdiApp {
-    fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let frame_buffer = Arc::new(ArcSwap::from_pointee(None));
         let frame_buffer_clone = frame_buffer.clone();
+
+        // egui::Contextをクローンしてスレッドで使用
+        let ctx = cc.egui_ctx.clone();
 
         // NDI receiver thread
         thread::spawn(move || {
@@ -57,6 +60,9 @@ impl NdiApp {
 
                 // Store using ArcSwap (lock-free)
                 frame_buffer_clone.store(Arc::new(Some(image)));
+
+                // これをしないとマウスカーソルを動かさないと再描画されない
+                ctx.request_repaint();
 
                 println!(
                     "Frame received (grayscale CPU): {}x{}, timecode={}",
@@ -100,10 +106,8 @@ impl eframe::App for NdiApp {
                         ui.image((texture.id(), size));
                     });
 
-                    // 新しいフレームが来たときだけ再描画をリクエスト
-                    if has_new_frame {
-                        ctx.request_repaint();
-                    }
+                    // Note: NDIスレッドがrequest_repaintを呼ぶため、
+                    // ここでは明示的に呼ばなくても新しいフレームが来たら自動的に再描画される
                 } else {
                     ui.centered_and_justified(|ui| {
                         ui.label(
