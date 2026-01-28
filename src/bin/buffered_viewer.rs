@@ -22,9 +22,12 @@ struct NdiApp {
 }
 
 impl NdiApp {
-    fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let frame_buffer = Arc::new(Mutex::new(VecDeque::new()));
         let frame_buffer_clone = frame_buffer.clone();
+
+        // egui::Contextをクローンしてスレッドで使用
+        let ctx = cc.egui_ctx.clone();
 
         // NDI receiver thread
         thread::spawn(move || {
@@ -52,6 +55,9 @@ impl NdiApp {
                         buf.pop_front();
                         eprintln!("Warning: Frame buffer overflow, dropping oldest frame");
                     }
+
+                    // これをしないとマウスカーソルを動かさないと再描画されない
+                    ctx.request_repaint();
 
                     println!(
                         "Frame received: {}x{}, timecode={}",
@@ -135,8 +141,6 @@ impl eframe::App for NdiApp {
                     ui.centered_and_justified(|ui| {
                         ui.image((texture.id(), size));
                     });
-
-                    ctx.request_repaint();
                 } else {
                     ui.centered_and_justified(|ui| {
                         ui.label(
