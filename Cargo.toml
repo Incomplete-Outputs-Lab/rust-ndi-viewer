@@ -9,3 +9,27 @@ license = "MIT"
 anyhow = "1.0"
 eframe = { version = "0.33" }
 grafton-ndi = { version = "0.10.0" }
+wgpu = "24"
+pollster = "0.4"
+arc-swap = "1.7"
+tokio = { version = "1", features = ["full"] }
+
+[[bin]]
+name = "raw-viewer"
+path = "src/bin/raw_viewer.rs"
+
+[[bin]]
+name = "buffered-viewer"
+path = "src/bin/buffered_viewer.rs"
+
+[[bin]]
+name = "grayscale-cpu"
+path = "src/bin/grayscale_cpu.rs"
+
+[[bin]]
+name = "grayscale-wgpu"
+path = "src/bin/grayscale_wgpu.rs"
+
+[[bin]]
+name = "tokio-viewer"
+path = "src/bin/tokio_viewer.rs"
