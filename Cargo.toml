@@ -1,0 +1,11 @@
+[package]
+name = "rust-ndi-viewer"
+version = "0.1.0"
+edition = "2024"
+authors = ["未完成成果物研究所 <misei.nul@gmail.com>"]
+license = "MIT"
+
+[dependencies]
+anyhow = "1.0"
+eframe = { version = "0.33" }
+grafton-ndi = { version = "0.10.0" }

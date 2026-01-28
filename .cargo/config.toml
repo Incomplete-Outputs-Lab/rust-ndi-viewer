@@ -1,0 +1,4 @@
+[build]
+
+[env]
+BINDGEN_EXTRA_CLANG_ARGS = "-m64" # Make sure to use 64bit
