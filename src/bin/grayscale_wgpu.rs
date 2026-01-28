@@ -82,11 +82,15 @@ impl NdiApp {
         }))
         .expect("Failed to find an appropriate adapter");
 
+        // Raspi4 (Mobile/Downlevel向け) の制限設定
+        let mut limits = wgpu::Limits::downlevel_defaults();
+        limits.max_color_attachments = 4;
+
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 label: Some("Device"),
                 required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default(),
+                required_limits: limits,
                 memory_hints: Default::default(),
             },
             None,
