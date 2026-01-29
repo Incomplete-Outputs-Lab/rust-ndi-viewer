@@ -34,7 +34,8 @@ impl NdiApp {
             let _ = receiver.run_loop(|frame| {
                 // CPUでグレースケール変換（ITU-R BT.601）
                 // 整数演算で高速化（固定小数点: 256倍スケール）
-                let mut grayscale_data = frame.data.clone();
+                // copy frame
+                let mut grayscale_data = frame.data.to_owned();
 
                 for chunk in grayscale_data.chunks_exact_mut(4) {
                     let r = chunk[0] as u32;

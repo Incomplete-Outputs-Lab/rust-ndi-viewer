@@ -50,10 +50,12 @@ impl NdiApp {
             };
 
             let _ = receiver.run_loop(|frame| {
+                // copy frame
+                let data = frame.data.to_vec();
                 let raw = RawFrame {
                     width: frame.width,
                     height: frame.height,
-                    data: frame.data,
+                    data,
                 };
 
                 // Store using ArcSwap (lock-free)

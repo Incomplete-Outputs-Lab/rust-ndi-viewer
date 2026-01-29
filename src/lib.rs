@@ -11,10 +11,10 @@ use std::time::Duration;
 pub const TARGET_SOURCE_NAME: &str = "";
 
 /// バリデーション済みフレームデータ
-pub struct ValidatedFrame {
+pub struct ValidatedFrame<'a> {
     pub width: i32,
     pub height: i32,
-    pub data: Vec<u8>,
+    pub data: &'a [u8],
     pub timecode: i64,
 }
 
@@ -162,7 +162,7 @@ impl NdiReceiver {
             }
 
             // Clone data only once for the callback (zero-copy until this point)
-            let data = video_frame_ref.data().to_vec();
+            let data = video_frame_ref.data();
 
             // Call callback with validated frame
             callback(ValidatedFrame {
