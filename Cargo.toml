@@ -13,6 +13,7 @@ wgpu = "24"
 pollster = "0.4"
 arc-swap = "1.7"
 tokio = { version = "1", features = ["full"] }
+bytemuck = "1.14"
 
 [[bin]]
 name = "raw-viewer"
@@ -33,3 +34,15 @@ path = "src/bin/grayscale_wgpu.rs"
 [[bin]]
 name = "tokio-viewer"
 path = "src/bin/tokio_viewer.rs"
+
+[[bin]]
+name = "framesync-viewer"
+path = "src/bin/framesync_viewer.rs"
+
+[[bin]]
+name = "blur-cpu"
+path = "src/bin/blur_cpu.rs"
+
+[[bin]]
+name = "blur-wgpu"
+path = "src/bin/blur_wgpu.rs"

@@ -4,18 +4,17 @@ use rust_ndi_viewer::{create_native_options, NdiReceiver, TARGET_SOURCE_NAME};
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Instant;
 
-const MAX_BUFFER_SIZE: usize = 30;
+// バッファに保持する最大フレーム数（オーバーフロー防止）
+const MAX_BUFFER_SIZE: usize = 180;
+
+// 表示遅延フレーム数（この数だけフレームがバッファに溜まってから表示開始）
+const BUFFER_DELAY_FRAMES: usize = 60;
 
 struct NdiApp {
     // スレッド間で共有するフレームバッファ（ColorImage + timecode）
     // Note: VecDequeは頻繁にpush/popするため、ArcSwapよりMutexが適切
     frame_buffer: Arc<Mutex<VecDeque<(egui::ColorImage, i64)>>>,
-
-    // ベースライン timecode と Instant（初回フレーム受信時に記録）
-    base_timecode: Option<i64>,
-    base_instant: Option<Instant>,
 
     // egui用のテクスチャハンドル
     texture: Option<egui::TextureHandle>,
@@ -72,8 +71,6 @@ impl NdiApp {
 
         Self {
             frame_buffer,
-            base_timecode: None,
-            base_instant: None,
             texture: None,
         }
     }
@@ -86,41 +83,19 @@ impl eframe::App for NdiApp {
         egui::CentralPanel::default()
             .frame(panel_frame)
             .show(ctx, |ui| {
-                let now = Instant::now();
-
-                // バッファから表示タイミングに達したフレームを取得
+                // バッファから固定遅延でフレームを取得
                 // try_lockでブロッキングを回避してパフォーマンス向上
                 let mut display_image = None;
                 if let Ok(mut buf) = self.frame_buffer.try_lock() {
-                    // ベースラインの初期化（初回フレーム受信時）
-                    if self.base_timecode.is_none() && !buf.is_empty() {
-                        let (_, first_timecode) = &buf[0];
-                        self.base_timecode = Some(*first_timecode);
-                        self.base_instant = Some(now);
-                        println!("Baseline set: timecode={}, instant={:?}", first_timecode, now);
-                    }
-
-                    // ベースラインが設定されている場合、表示タイミングを計算
-                    if let (Some(base_tc), Some(base_inst)) =
-                        (self.base_timecode, self.base_instant)
-                    {
-                        // バッファの先頭から順にチェック
-                        while let Some((_img, tc)) = buf.front() {
-                            // このフレームの表示タイミングを計算（100ns単位をnsに変換）
-                            let frame_offset_ns = (tc - base_tc) * 100; // 100ns -> ns
-                            let display_time = base_inst
-                                + std::time::Duration::from_nanos(frame_offset_ns as u64);
-
-                            if now >= display_time {
-                                // 表示タイミングに達したのでフレームを取り出す
-                                if let Some((image, timecode)) = buf.pop_front() {
-                                    display_image = Some(image);
-                                    println!("Displaying frame: timecode={}, delay={:?}", timecode, now - display_time);
-                                }
-                            } else {
-                                // まだ表示タイミングに達していないので待つ
-                                break;
-                            }
+                    // バッファに BUFFER_DELAY_FRAMES + 1 以上のフレームが溜まったら表示開始
+                    if buf.len() > BUFFER_DELAY_FRAMES {
+                        if let Some((image, timecode)) = buf.pop_front() {
+                            display_image = Some(image);
+                            println!(
+                                "Displaying frame: timecode={}, buffer_size={}",
+                                timecode,
+                                buf.len()
+                            );
                         }
                     }
                 }
@@ -153,9 +128,6 @@ impl eframe::App for NdiApp {
                         );
                     });
                 }
-
-                // 常に再描画をリクエスト（タイミングチェックのため）
-                ctx.request_repaint();
             });
     }
 }
